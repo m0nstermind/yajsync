@@ -116,6 +116,7 @@ public class RsyncServer
                     isPreserveUser(cfg.isPreserveUser()).
                     isPreserveGroup(cfg.isPreserveGroup()).
                     isNumericIds(cfg.isNumericIds()).
+                    isSparse( cfg.isSparse() ).
                     isInterruptible(isChannelsInterruptible).
                     blockSize( cfg.blockSize() ).
                     isSafeFileList(cfg.isSafeFileList()).build();

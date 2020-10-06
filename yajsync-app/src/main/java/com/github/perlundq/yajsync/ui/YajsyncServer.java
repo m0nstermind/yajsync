@@ -234,15 +234,15 @@ public final class YajsyncServer
                     isOK = server.serve(modules, sock, sock, isInterruptible);
                 } catch (ModuleException e) {
                     if (_log.isLoggable(Level.SEVERE)) {
-                        _log.severe(String.format(
+                        _log.log(Level.SEVERE, String.format(
                             "Error: failed to initialise modules for " +
                             "principal %s using ModuleProvider %s: %s%n",
-                                sock.peerPrincipal().get(), _moduleProvider, e));
+                                sock.peerPrincipal().get(), _moduleProvider, e),e);
                     }
                 } catch (ChannelException e) {
                     if (_log.isLoggable(Level.SEVERE)) {
-                        _log.severe("Error: communication closed with peer: " +
-                                    e.getMessage());
+                        _log.log(Level.SEVERE,"Error: communication closed with peer: " +
+                                    e.getMessage(),e);
                     }
                 } catch (Throwable t) {
                     if (_log.isLoggable(Level.SEVERE)) {
@@ -253,9 +253,8 @@ public final class YajsyncServer
                         sock.close();
                     } catch (IOException e) {
                         if (_log.isLoggable(Level.SEVERE)) {
-                            _log.severe(String.format(
-                                "Got error during close of socket %s: %s",
-                                sock, e.getMessage()));
+                            _log.log( Level.SEVERE, String.format( "Got error during close of socket %s: %s",
+                                            sock, e.getMessage() ), e );
                         }
                     }
                 }

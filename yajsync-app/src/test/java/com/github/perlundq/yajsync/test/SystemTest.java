@@ -549,7 +549,7 @@ public class SystemTest
         Path right = _tempDir.newFolder("right_dir").toPath();
         Path left_file = Files.createFile(left.resolve("file1"));
         Files.createFile(right.resolve("file1"));
-        FileUtil.writeToFiles(0, left_file);
+        FileUtil.writeToFiles(1, left_file);
         assertFalse(FileUtil.isDirectoriesIdentical(left, right));
     }
 
@@ -599,6 +599,23 @@ public class SystemTest
     }
 
     @Test
+    public void testClientSparseFileCopy() throws IOException
+    {
+        Path src = _tempDir.newFile().toPath();
+        Path dst = _tempDir.newFile().toPath();
+        FileUtil.writeToFiles(0, src);
+        int numFiles = 1;
+        long fileSize = Files.size(src);
+        ReturnStatus status = fileCopy(src, dst, "-S");
+        assertTrue(status.rc == 0);
+        assertTrue(FileUtil.isContentIdentical(src, dst));
+        assertTrue(status.stats.numFiles() == numFiles);
+        assertTrue(status.stats.numTransferredFiles() == numFiles);
+        assertTrue(status.stats.totalMatchedSize() == fileSize);
+        assertTrue(status.stats.totalLiteralSize() == 0);
+    }
+
+    @Test
     public void testClientSingleFileCopy() throws IOException
     {
         Path src = _tempDir.newFile().toPath();
@@ -623,7 +640,7 @@ public class SystemTest
                 resolve(Paths.get(Text.DOT_DOT)).
                 resolve(src.getFileName());
         Path dst = _tempDir.newFile().toPath();
-        FileUtil.writeToFiles(0, src);
+        FileUtil.writeToFiles(1, src);
         int numFiles = 1;
         long fileSize = Files.size(src);
         ReturnStatus status = fileCopy(srcDotDot, dst);

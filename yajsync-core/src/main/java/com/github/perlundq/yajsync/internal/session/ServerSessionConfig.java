@@ -72,6 +72,7 @@ public class ServerSessionConfig extends SessionConfig
     private boolean _isNumericIds = false;
     private boolean _isIgnoreTimes = false;
     private boolean _isWholeFile = false;
+    private boolean _isSparse = false;
     private FileSelection _fileSelection = FileSelection.EXACT;
     private Module _module;
     private int _verbosity = 0;
@@ -350,6 +351,12 @@ public class ServerSessionConfig extends SessionConfig
                             return ArgumentParser.Status.CONTINUE;
                         }));
 
+        argsParser.add(Option.newWithoutArgument(Option.Policy.OPTIONAL, "sparse", "S", "",
+                        option -> {
+                            _isSparse = true;
+                            return ArgumentParser.Status.CONTINUE;
+                        }));
+
         argsParser.add(Option.newWithoutArgument(Option.Policy.OPTIONAL, "verbose", "v", "",
                                                  option -> {
                                                      _verbosity++;
@@ -587,6 +594,11 @@ public class ServerSessionConfig extends SessionConfig
     public boolean isIgnoreTimes()
     {
         return _isIgnoreTimes;
+    }
+    
+    public boolean isSparse()
+    {
+        return _isSparse;
     }
 
     public boolean isSafeFileList()

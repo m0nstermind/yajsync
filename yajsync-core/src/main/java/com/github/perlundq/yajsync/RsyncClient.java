@@ -420,6 +420,7 @@ public final class RsyncClient
                     isPreserveLinks(_isPreserveLinks).
                     isPreserveUser(_isPreserveUser).
                     isPreserveGroup(_isPreserveGroup).
+                    isSparse(_isSparse).
                     isNumericIds(_isNumericIds).
                     blockSize( _blockSize ).
                     fileSelection(fileSelection).build();
@@ -781,6 +782,9 @@ public final class RsyncClient
             if (_isIgnoreTimes) {
                 sb.append("I");
             }
+            if (_isSparse) {
+                sb.append("S");
+            }
             if (fileSelection == FileSelection.RECURSE) {
                 sb.append("r");
             }
@@ -861,11 +865,12 @@ public final class RsyncClient
         private boolean _isPreservePermissions;
         private boolean _isPreserveTimes;
         public boolean _isWholeFile;
+        public boolean _isSparse;
         private ChecksumHash _checksumHash = ChecksumHash.xxhash;
         private Charset _charset = Charset.forName(Text.UTF8_NAME);
         private ExecutorService _executorService;
         private FileSelection _fileSelection;
-        private int _verbosity;
+        private int _verbosity ;
         private int _blockSize = DEFAULT_BLOCK_SIZE;
         private PrintStream _stderr = System.err;
 
@@ -965,6 +970,12 @@ public final class RsyncClient
             return this;
         }
         
+        public Builder isSparse(boolean is)
+        {
+            _isSparse = is;
+            return this;
+        }
+        
         public Builder checksumHash( ChecksumHash hash ) {
             _checksumHash = hash;
             return this;
@@ -1028,6 +1039,7 @@ public final class RsyncClient
     private final boolean _isPreservePermissions;
     private final boolean _isPreserveTimes;
     private final boolean _isWholeFile;
+    private final boolean _isSparse;
     private final Charset _charset;
     private final ChecksumHash _checksumHash;
     private final ExecutorService _executorService;
@@ -1054,6 +1066,7 @@ public final class RsyncClient
         _isPreservePermissions = builder._isPreservePermissions;
         _isPreserveTimes = builder._isPreserveTimes;
         _isWholeFile = builder._isWholeFile;
+        _isSparse = builder._isSparse;
         _charset = builder._charset;
         _checksumHash = builder._checksumHash;
         _blockSize = builder._blockSize;

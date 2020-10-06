@@ -320,6 +320,12 @@ public class YajsyncClient
                             _clientBuilder.isWholeFile(true);
                             return ArgumentParser.Status.CONTINUE;
                         }));
+        options.add(Option.newWithoutArgument(Option.Policy.OPTIONAL, "sparse", "S",
+                        "Transfer sparse files efficiently",
+                        option -> {
+                            _clientBuilder.isSparse(true);
+                            return ArgumentParser.Status.CONTINUE;
+                        }));
 
         options.add(Option.newWithoutArgument(Option.Policy.OPTIONAL, "numeric-ids", "",
                                               "don't map uid/gid values by user/group name " +
@@ -652,18 +658,16 @@ public class YajsyncClient
             }
         } catch (UnknownHostException | UnresolvedAddressException e) {
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.severe(String.format("Error: failed to resolve %s (%s)",
-                                          connInfo.address(), e.getMessage()));
+                _log.log( Level.SEVERE, String.format( "Error: failed to resolve %s (%s)",
+                                connInfo.address(), e.getMessage() ), e );
             }
         } catch (IOException e) { // SocketChannel.{open,close}()
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.severe("Error: socket open/close error: " +
-                            e.getMessage());
+                _log.log( Level.SEVERE, "Error: socket open/close error: " + e.getMessage(), e );
             }
         } catch (ChannelException e) {
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.log(Level.SEVERE,
-                        "Error: communication closed with peer: ", e);
+                _log.log( Level.SEVERE, "Error: communication closed with peer: ", e );
             }
         }
         return RsyncClient.Result.failure();

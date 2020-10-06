@@ -61,4 +61,5 @@ public interface ChecksumDigest
         
         return true;
     }
+
 }

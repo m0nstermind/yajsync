@@ -847,9 +847,8 @@ public class Receiver implements RsyncTask, MessageHandler
                                   Text.stripLast(text)));
         } catch (TextConversionException e) {
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.severe(String.format(
-                    "Peer sent a message but we failed to convert all " +
-                    "characters in message. %s (%s)", e, message.toString()));
+                _log.log( Level.SEVERE, String.format( "Peer sent a message but we failed to convert all characters in message. %s (%s)",
+                                e, message.toString() ), e );
             }
             throw new RsyncProtocolException(e);
         }
@@ -1071,7 +1070,7 @@ public class Receiver implements RsyncTask, MessageHandler
 
             return 0;
         } catch ( IOException | RsyncSecurityException e ) {
-            _log.severe( String.format( "cannot create hardlink %s -> %s", hlinked.path(), targetPath ) );
+            _log.log( Level.SEVERE, String.format( "cannot create hardlink %s -> %s", hlinked.path(), targetPath ), e );
             return IoError.GENERAL;
         }
     }
@@ -1227,7 +1226,7 @@ public class Receiver implements RsyncTask, MessageHandler
                                        fileInfo.path().getParent(),
                                        e.getMessage());
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.severe(msg);
+                _log.log( Level.SEVERE, msg, e );
             }
             _generator.sendMessage(MessageCode.ERROR_XFER, msg + '\n');
             discardData( checksumHeader );
@@ -1272,9 +1271,9 @@ public class Receiver implements RsyncTask, MessageHandler
             } catch (IOException e) {
                 ioError |= IoError.GENERAL;
                 if (_log.isLoggable(Level.SEVERE)) {
-                    _log.severe(String.format("failed to update attrs on %s: " +
+                    _log.log(Level.SEVERE,String.format("failed to update attrs on %s: " +
                                               "%s",
-                                              resultFile, e.getMessage()));
+                                              resultFile, e.getMessage()),e);
                 }
             }
             _generator.purgeFile(segment, index);
@@ -2007,13 +2006,26 @@ public class Receiver implements RsyncTask, MessageHandler
         int expectedIndex = 0;
 
         while (true) {
-            // TODO 12% of cpu time is spent here: parallelize getting data and writing it
             final int token = _in.getInt();
             if (token == 0) {
                 break;
             }
             // token correlates to a matching block index
             if (token < 0) {
+                if ( token == Integer.MIN_VALUE ) {
+                    // sparse block
+                    int sparselen =  _in.getInt();
+                    if ( _log.isLoggable( Level.FINEST ) ) {
+                        _log.finest( String.format( "got sparse block of %d bytes", sparselen ) );
+                    }
+                    
+                    ByteBuffer buffer = writer.takeNext( sparselen );
+                    checksum.chunk( buffer );
+                    buffer.rewind();
+                    writer.release( buffer );
+                    sizeMatch += sparselen;
+                    continue;
+                }
                 // blockIndex >= 0 && blockIndex <= Integer.MAX_VALUE
                 final int blockIndex = - (token + 1);
                 if (_log.isLoggable(Level.FINEST)) {

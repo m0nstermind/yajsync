@@ -20,7 +20,7 @@ Currently implemented rsync options:
 
 - Preserve times (-t, --times)
 
-- Preserve symbolic links (-l, --links)
+- Preserve symbolic and hard links (-l, --links)
 
 - Transfer directories (-d, --dirs)
 
@@ -38,6 +38,16 @@ Currently implemented rsync options:
 
 - Set daemon connection timeout in seconds (--contimeout=SECONDS)
 
+- copy files whole, without delta-xfer algorithm ( -W, --whole-file )
+
+Extension options ( not compatible with rsync ):
+
+- force a fixed checksum block-size ( -B BYTES, --block-size=BYTES ). Useful when syncing hugetlbfs filesystems, which restrict writes to exact page size.
+
+- choose hash to use for checksum md5 ( compatible with rsync, but slow ) or xxhash. Use xxhash to sync with speeds > 100MBps. ( -c, checksum-choice=md5,xxhash )
+
+- efficient sparse files sync ( not transferring zero blocks over the wire ), ( -S, --sparse )
+
 Simulated options:
 
 - Preserve character device files and block device files (--devices)
@@ -50,7 +60,6 @@ is the inability to handle device files in Java. We still want to support these
 options in order to be able to support --archive.
 
 yajsync is compliant with at least rsync version 3.0.9.
-
 
 Features
 --------

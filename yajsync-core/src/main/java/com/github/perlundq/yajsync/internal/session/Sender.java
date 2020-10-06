@@ -99,6 +99,7 @@ public final class Sender implements RsyncTask, MessageHandler
         private boolean _isNumericIds;
         private boolean _isSafeFileList = true;
         private boolean _isSendStatistics;
+        private boolean _isSparse;
         private Charset _charset = Charset.forName(Text.UTF8_NAME);
         private FileSelection _fileSelection = FileSelection.EXACT;
         private FilterMode _filterMode = FilterMode.NONE;
@@ -225,6 +226,12 @@ public final class Sender implements RsyncTask, MessageHandler
             return this;
         }
 
+        public Builder isSparse( boolean _isSparse )
+        {
+            this._isSparse = _isSparse;
+            return this;
+        }
+
         public Builder defaultUser(User defaultUser)
         {
             _defaultUser = defaultUser;
@@ -258,6 +265,7 @@ public final class Sender implements RsyncTask, MessageHandler
         {
             return new Sender(this);
         }
+
     }
 
     private static final Logger _log =
@@ -277,6 +285,7 @@ public final class Sender implements RsyncTask, MessageHandler
     private final boolean _isNumericIds;
     private final boolean _isSafeFileList;
     private final boolean _isSendStatistics;
+    private boolean _isSparse;
     private final int _checksumSeed;
     private final ChecksumHash _checksumHash;
     private final FileInfoCache _fileInfoCache = new FileInfoCache();
@@ -297,7 +306,7 @@ public final class Sender implements RsyncTask, MessageHandler
     private FileAttributeManager _fileAttributeManager;
     private int _curSegmentIndex;
     private int _ioError;
-
+    
     private Sender(Builder builder)
     {
         _duplexChannel = new AutoFlushableRsyncDuplexChannel(
@@ -317,6 +326,7 @@ public final class Sender implements RsyncTask, MessageHandler
         _isNumericIds = builder._isNumericIds;
         _isSafeFileList = builder._isSafeFileList;
         _isSendStatistics = builder._isSendStatistics;
+        _isSparse = builder._isSparse;
         _checksumSeed = builder._checksumSeed;
         _checksumHash = builder._checksumHash;
         _fileSelection = builder._fileSelection;
@@ -329,6 +339,7 @@ public final class Sender implements RsyncTask, MessageHandler
         _defaultFilePermissions = builder._defaultFilePermissions;
         _defaultDirectoryPermissions = builder._defaultDirectoryPermissions;
         _blockSize = builder._blockSize;
+        
     }
 
     @Override
@@ -347,6 +358,7 @@ public final class Sender implements RsyncTask, MessageHandler
                 "isPreserveGroup=%b, " +
                 "isSafeFileList=%b, " +
                 "isSendStatistics=%b, " +
+                "isSparse=%b, " +
                 "checksumHash=%s, " +
                 "checksumSeed=%s, " +
                 "fileSelection=%s, " +
@@ -365,6 +377,7 @@ public final class Sender implements RsyncTask, MessageHandler
                 _isPreserveGroup,
                 _isSafeFileList,
                 _isSendStatistics,
+                _isSparse,
                 _checksumHash,
                 _checksumSeed,
                 _fileSelection,
@@ -621,9 +634,7 @@ public final class Sender implements RsyncTask, MessageHandler
                                    Text.stripLast(text)));
         } catch (TextConversionException e) {
             if (_log.isLoggable(Level.SEVERE)) {
-                _log.severe(String.format(
-                    "Peer sent a message but we failed to convert all " +
-                    "characters in message. %s (%s)", e, message.toString()));
+                _log.log( Level.SEVERE, String.format( "Peer sent a message but we failed to convert all " + "characters in message. %s (%s)", e, message.toString() ), e );
             }
             throw new RsyncProtocolException(e);
         }
@@ -1487,15 +1498,51 @@ public final class Sender implements RsyncTask, MessageHandler
         ChecksumDigest checksum = _checksumHash.instance( 0 );
         long bytesSent = 0;
         while (view.windowLength() > 0) {
-            sendDataFrom( view.windowBuffer() );
-            bytesSent += view.windowLength();
+            int wlen = view.windowLength();
+
+            if ( _isSparse && isBlockContentSparse( view.windowBuffer() ) ) {
+                sendSparseBlock( wlen );
+                _stats._totalMatchedSize += wlen;
+            } else {
+                sendDataFrom( view.windowBuffer() );
+                _stats._totalLiteralSize += wlen;
+            }
+            
+            bytesSent += wlen;
+
             checksum.chunk( view.windowBuffer() );
-            view.slide(view.windowLength());
+            
+            view.slide( wlen );
         }
-        _stats._totalLiteralSize += fileSize;
         _duplexChannel.putInt(0);
         assert bytesSent == fileSize;
         return checksum.digest( );
+    }
+
+    private boolean isBlockContentSparse( ByteBuffer buf )
+    {
+        int pos = buf.position();
+        int rem = buf.remaining();
+        
+        while ( rem >= 8 ) {
+            if ( buf.getLong( pos ) != 0 ) 
+                return false;
+            pos+=8;
+            rem-=8;
+        }
+        
+        while ( rem --> 0 ) {
+            if ( buf.get( pos++ ) != 0 ) 
+                return false;
+        }
+
+        return true;
+    }
+
+    private void sendSparseBlock( int wlen ) throws ChannelException
+    {
+        _duplexChannel.putInt( Integer.MIN_VALUE );
+        _duplexChannel.putInt( wlen );
     }
 
     private ByteBuffer sendMatchesAndData(FileView fv,

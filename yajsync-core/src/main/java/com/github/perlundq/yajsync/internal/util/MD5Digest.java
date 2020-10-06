@@ -78,7 +78,7 @@ public class MD5Digest implements ChecksumDigest
         assert md != null;
         md.update( buf, pos, len );
     }
-
+    
     @Override
     public void chunk( ByteBuffer buf )
     {

@@ -72,9 +72,8 @@ public final class RsyncTaskExecutor
                 }
             } catch (Throwable t) {
                 if (_log.isLoggable(Level.FINER)) {
-                    _log.finer(String.format(
-                        "deferring exception raised by task %d/%d: %s",
-                        i + 1, futures.size(), t));
+                    _log.log( Level.FINER, String.format( "deferring exception raised by task %d/%d: %s",
+                                    i + 1, futures.size(), t ), t );
                 }
                 if (thrown == null) {
                     thrown = t;
