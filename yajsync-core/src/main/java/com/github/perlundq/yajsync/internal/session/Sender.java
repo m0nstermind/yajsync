@@ -768,6 +768,9 @@ public final class Sender implements RsyncTask, MessageHandler
                         "got flags %s - not supported",
                         Integer.toBinaryString(iFlags)));
                 }
+                if ( _log.isLoggable( Level.FINE ) ) {
+                    _log.fine( String.format( "Received flags %s for index %d", Item.toString( iFlags ), index ) );
+                }
                 if ( (iFlags & Item.XNAME_FOLLOWS) != 0) {
                     readVstring();
                 }
@@ -793,7 +796,7 @@ public final class Sender implements RsyncTask, MessageHandler
                         }
                         numFilesInTransit--;
                     }
-                    sendIndexAndIflags(index, iFlags);
+                    sendIndexAndIflags( index, iFlags );
                 } else if (phase == TransferPhase.TRANSFER) {
                     LocatableFileInfo fileInfo = null;
                     if (segment != null) {
@@ -1247,7 +1250,7 @@ public final class Sender implements RsyncTask, MessageHandler
             throws ChannelException
     {
         if (_log.isLoggable(Level.FINE)) {
-            _log.fine("sending meta data for " + fileInfo.path());
+            _log.fine( "sending meta data for " + fileInfo );
         }
 
         char xflags = 0;
@@ -1359,7 +1362,7 @@ public final class Sender implements RsyncTask, MessageHandler
             _duplexChannel.putByte((byte) xflags);
         }
         if (_log.isLoggable(Level.FINER)) {
-            _log.finer("sent flags " + Integer.toBinaryString(xflags));
+            _log.finer("sent flags " + TransmitFlags.toString( xflags ) );
         }
 
         if ((xflags & TransmitFlags.SAME_NAME) != 0) {

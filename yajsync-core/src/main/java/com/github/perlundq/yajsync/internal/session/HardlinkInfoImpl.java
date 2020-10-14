@@ -74,5 +74,10 @@ class HardlinkInfoImpl extends FileInfoImpl implements HardlinkInfo
         assert path != null;
         _targetPathName = path;
     }
-    
+
+    @Override
+    public String toString()
+    {
+        return super.toString()+", linkedIdx="+_linked_idx+", inode="+attrs().inode();
+    }
 }

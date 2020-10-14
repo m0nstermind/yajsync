@@ -55,4 +55,29 @@ final class Item
     {
         return (flags | _supported) == _supported;
     }
+    
+    public static String toString( int flags ) {
+        if ( flags == 0 )
+            return "no change";
+        
+        StringBuffer sb = new StringBuffer( Integer.toHexString( flags ) ).append( ':' );
+        
+        if ((flags & REPORT_ATIME      )!=0 ) sb.append("REPORT_ATIME ");
+        if ((flags & REPORT_CHANGE     )!=0 ) sb.append("REPORT_CHANGE ");
+        if ((flags & REPORT_SIZE       )!=0 ) sb.append("REPORT_SIZE ");
+        if ((flags & REPORT_TIMEFAIL   )!=0 ) sb.append("REPORT_TIMEFAIL ");
+        if ((flags & REPORT_TIME       )!=0 ) sb.append("REPORT_TIME ");
+        if ((flags & REPORT_PERMS      )!=0 ) sb.append("REPORT_PERMS ");
+        if ((flags & REPORT_OWNER      )!=0 ) sb.append("REPORT_OWNER ");
+        if ((flags & REPORT_GROUP      )!=0 ) sb.append("REPORT_GROUP ");
+        if ((flags & REPORT_ACL        )!=0 ) sb.append("REPORT_ACL ");
+        if ((flags & REPORT_XATTR      )!=0 ) sb.append("REPORT_XATTR ");
+        if ((flags & BASIS_TYPE_FOLLOWS)!=0 ) sb.append("BASIS_TYPE_FOLLOWS ");
+        if ((flags & XNAME_FOLLOWS     )!=0 ) sb.append("XNAME_FOLLOWS ");
+        if ((flags & IS_NEW            )!=0 ) sb.append("IS_NEW ");
+        if ((flags & LOCAL_CHANGE      )!=0 ) sb.append("LOCAL_CHANGE ");
+        if ((flags & TRANSFER          )!=0 ) sb.append("TRANSFER");
+
+        return sb.toString();
+    }
 }

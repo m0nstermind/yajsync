@@ -999,22 +999,37 @@ public class Receiver implements RsyncTask, MessageHandler
                             Integer.toBinaryString(iFlags)));
                 }
 
-                segment = Util.defaultIfNull(segment, _fileList.firstSegment());
-                LocatableFileInfo fileInfo = (LocatableFileInfo) segment.getFileWithIndexOrNull(index);
-                if (fileInfo == null) {
-                    if (_fileSelection != FileSelection.RECURSE) {
-                        throw new RsyncProtocolException(String.format(
-                            "Received invalid file index %d from peer",
-                            index));
-                    }
-                    segment = _fileList.getSegmentWith(index);
-                    if (segment == null) {
-                        throw new RsyncProtocolException(String.format(
-                            "Received invalid file %d from peer",
-                            index));
-                    }
+                if (_log.isLoggable(Level.FINE)) {
+                    _log.fine(String.format("Received flags %s for index %d",Item.toString(iFlags), index));
+                }
+
+                LocatableFileInfo fileInfo = null;
+                if ( !_fileList.isEmpty() ) {
+                    segment = Util.defaultIfNull(segment, _fileList.firstSegment());
                     fileInfo = (LocatableFileInfo) segment.getFileWithIndexOrNull(index);
-                    assert fileInfo != null;
+                    if (fileInfo == null) {
+                        if (_fileSelection == FileSelection.RECURSE) {
+                            segment = _fileList.getSegmentWith(index);
+                            if ( segment != null ) {
+                                fileInfo = (LocatableFileInfo) segment.getFileWithIndexOrNull( index );
+                            }
+                        }
+                    }
+                }
+                
+                if ( fileInfo == null ) {
+                    if ( ( iFlags & Item.TRANSFER ) == 0 ) {
+                        // Sender sends acks for already finished files by Receiver.
+                        // for hardlinks, receiver has them non finished in some segment
+                        // if it is not foun there - we can safely ignore this index 
+                        if (_log.isLoggable(Level.FINE)) {
+                            _log.fine( String.format( "index %d is not a transfer nor hardlink", index ) );
+                        }
+                        continue;
+                    }
+
+                    throw new RsyncProtocolException( String.format( "Received invalid file %d from peer", index ) );
+                    
                 }
 
                 if ((iFlags & Item.TRANSFER) == 0) {
@@ -1457,8 +1472,8 @@ public class Receiver implements RsyncTask, MessageHandler
         FileInfoStub stub = new FileInfoStub();
         stub._flags = flags;
         ByteBuffer pathNameBytes = receivePathNameBytes(flags);
-        if ( (flags & TransmitFlags.HLINKED) !=0 && (flags & TransmitFlags.HLINK_FIRST) == 0  ) {
-            stub._firstHlinkIdx = receiveAndDecodeInt();
+        if ( (flags & TransmitFlags.HLINKED) !=0  ) {
+            stub._firstHlinkIdx = (flags & TransmitFlags.HLINK_FIRST) == 0 ? receiveAndDecodeInt() : -1;
         }
         RsyncFileAttributes attrs = receiveRsyncFileAttributes(flags);
         String pathNameOrNull = decodePathName(pathNameBytes);
@@ -1605,7 +1620,7 @@ public class Receiver implements RsyncTask, MessageHandler
                 break;
             }
             if (_log.isLoggable(Level.FINER)) {
-                _log.finer("got flags " + Integer.toBinaryString(flags));
+                _log.finer( "got flags " + TransmitFlags.toString( flags ) );
             }
             FileInfoStub stub = receiveFileInfoStub(flags);
             stubs.add(stub);
@@ -1637,7 +1652,7 @@ public class Receiver implements RsyncTask, MessageHandler
                 break;
             }
             if (_log.isLoggable(Level.FINER)) {
-                _log.finer("got flags " + Integer.toBinaryString(flags));
+                _log.finer( "got flags " + TransmitFlags.toString( flags ) );
             }
             FileInfo fileInfo = receiveFileInfo(flags, builder);
             builder.add(fileInfo);

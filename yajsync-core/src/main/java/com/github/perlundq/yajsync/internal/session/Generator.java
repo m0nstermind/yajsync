@@ -1188,11 +1188,11 @@ public class Generator implements RsyncTask
     {
         assert newAttrs != null;
         char iFlags = (char) (iMask | itemizeFlags(curAttrsOrNull, newAttrs));
-        if (_log.isLoggable(Level.FINE)) {
-            _log.fine("(Generator) sending itemizeFlags=" + (int) iFlags);
+        if ( _log.isLoggable( Level.FINE ) ) {
+            _log.fine( "(Generator) sending itemizeFlags=" + Item.toString( iFlags ) );
         }
-        _out.encodeIndex(index);
-        _out.putChar(iFlags);
+        _out.encodeIndex( index );
+        _out.putChar( iFlags );
     }
 
     private void itemizeDirectory(int index, LocatableFileInfo fileInfo)

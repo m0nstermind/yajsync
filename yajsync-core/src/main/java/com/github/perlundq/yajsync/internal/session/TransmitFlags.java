@@ -28,10 +28,12 @@ final class TransmitFlags
     static final int SAME_MODE          = 1 << 1;
     static final int EXTENDED_FLAGS     = 1 << 2;      /* protocols 28 - now */
     static final int SAME_UID           = 1 << 3;
+    
     static final int SAME_GID           = 1 << 4;
     static final int SAME_NAME          = 1 << 5;
     static final int LONG_NAME          = 1 << 6;
     static final int SAME_TIME          = 1 << 7;
+    
     static final int SAME_RDEV_MAJOR    = 1 << 8;     /* protocols 28 - now (devices only) */
     static final int USER_NAME_FOLLOWS  = 1 << 10;  /* protocols 30 - now */
     static final int GROUP_NAME_FOLLOWS = 1 << 11; /* protocols 30 - now */
@@ -43,4 +45,25 @@ final class TransmitFlags
     // static final int SAME_DEV_pre30 = (1<<10);     /* protocols 28 - 29  */
     //final  static int RDEV_MINOR_8_pre30 = (1<<11); /* protocols 28 - 29  */
     final  static int HLINK_FIRST = (1<<12);        /* protocols 30 - now (HLINKED files only) */
+    
+    public static String toString(int xflags ) {
+        StringBuilder sb = new StringBuilder( Integer.toHexString( xflags )).append( ':' );
+                                      
+         if ( ( xflags & TOP_DIR           ) != 0 ) sb.append("TOP_DIR ");
+         if ( ( xflags & SAME_MODE         ) != 0 ) sb.append("SAME_MODE ");
+         if ( ( xflags & EXTENDED_FLAGS    ) != 0 ) sb.append("EXTENDED_FLAGS ");
+         if ( ( xflags & SAME_UID          ) != 0 ) sb.append("SAME_UID ");
+         if ( ( xflags & SAME_GID          ) != 0 ) sb.append("SAME_GID ");
+         if ( ( xflags & SAME_NAME         ) != 0 ) sb.append("SAME_NAME ");
+         if ( ( xflags & LONG_NAME         ) != 0 ) sb.append("LONG_NAME ");
+         if ( ( xflags & SAME_TIME         ) != 0 ) sb.append("SAME_TIME ");
+         if ( ( xflags & SAME_RDEV_MAJOR   ) != 0 ) sb.append("SAME_RDEV_MAJOR ");
+         if ( ( xflags & USER_NAME_FOLLOWS ) != 0 ) sb.append("USER_NAME_FOLLOWS ");
+         if ( ( xflags & GROUP_NAME_FOLLOWS) != 0 ) sb.append("GROUP_NAME_FOLLOWS ");
+         if ( ( xflags & IO_ERROR_ENDLIST  ) != 0 ) sb.append("IO_ERROR_ENDLIST ");
+         if ( ( xflags & HLINKED           ) != 0 ) sb.append("HLINKED ");
+         if ( ( xflags & HLINK_FIRST       ) != 0 ) sb.append("HLINK_FIRST ");
+
+         return sb.toString();
+    }
 }
