@@ -86,6 +86,9 @@ public class Receiver implements RsyncTask, MessageHandler
         private boolean _isReceiveStatistics;
         private boolean _isSafeFileList = true;
         private FilterMode _filterMode = FilterMode.NONE;
+        
+        private Statistics.Listener _statsListener = stats -> {};
+
 
         public User _defaultUser = User.NOBODY;
         public Group _defaultGroup = Group.NOBODY;
@@ -190,6 +193,13 @@ public class Receiver implements RsyncTask, MessageHandler
             return this;
         }
 
+        public Builder statisticsListener( Statistics.Listener listener )
+        {
+            assert listener != null;
+            _statsListener = listener;
+            return this;
+        }
+
         public Receiver build()
         {
             return new Receiver(this);
@@ -258,6 +268,7 @@ public class Receiver implements RsyncTask, MessageHandler
     private final Map<Integer, Group> _recursiveGidGroupMap = new HashMap<>();
     private final RsyncInChannel _in;
     private final SessionStatistics _stats = new SessionStatistics();
+    private final Statistics.Listener _statsListener;
     private final Path _targetPath; // is null if file listing
     private final TextDecoder _characterDecoder;
 
@@ -289,6 +300,7 @@ public class Receiver implements RsyncTask, MessageHandler
         _targetPath = builder._targetPath;
         _isListOnly = _targetPath == null;
         _characterDecoder = TextDecoder.newStrict(_generator.charset());
+        _statsListener = builder._statsListener;
 
         if (!_isListOnly) {
             _fileAttributeManager = FileAttributeManagerFactory.getMostPerformant(
@@ -446,6 +458,7 @@ public class Receiver implements RsyncTask, MessageHandler
             }
             _ioError |= receiveFiles();
             _stats._numFiles = _fileList.numFiles();
+            _statsListener.refresh( _stats );
             if (_isReceiveStatistics) {
                 receiveStatistics();
                 if (_log.isLoggable(Level.FINE)) {
@@ -781,6 +794,7 @@ public class Receiver implements RsyncTask, MessageHandler
         _stats._totalFileSize = receiveAndDecodeLong(3);
         _stats._fileListBuildTime =  receiveAndDecodeLong(3);
         _stats._fileListTransferTime =  receiveAndDecodeLong(3);
+        _statsListener.refresh( _stats );
     }
 
     private void sendEmptyFilterRules() throws InterruptedException
@@ -1030,6 +1044,7 @@ public class Receiver implements RsyncTask, MessageHandler
 
                 _stats._numTransferredFiles++;
                 _stats._totalTransferredSize += fileInfo.attrs().size();
+                _statsListener.refresh( _stats );
 
                 if (isTransferred(index) && _log.isLoggable(Level.FINE)) {
                     _log.fine("Re-receiving " + fileInfo);
@@ -1065,6 +1080,7 @@ public class Receiver implements RsyncTask, MessageHandler
                 
                 _stats._numFiles++;
             }
+            _statsListener.refresh( _stats );
 
             _generator.purgeFile( segment, index );
 
@@ -1598,6 +1614,8 @@ public class Receiver implements RsyncTask, MessageHandler
         long segmentSize = _in.numBytesRead() -
                            _in.numBytesPrefetched() - numBytesRead;
         _stats._totalFileListSize += segmentSize;
+        _statsListener.refresh( _stats );
+
         return stubs;
     }
 
@@ -1628,6 +1646,7 @@ public class Receiver implements RsyncTask, MessageHandler
         long segmentSize = _in.numBytesRead() -
                            _in.numBytesPrefetched() - numBytesRead;
         _stats._totalFileListSize += segmentSize;
+        _statsListener.refresh( _stats );
         Filelist.Segment segment = _fileList.newSegment(builder);
         return segment;
     }
@@ -1939,6 +1958,7 @@ public class Receiver implements RsyncTask, MessageHandler
         }
         _stats._totalLiteralSize += sizeLiteral;
         _stats._totalMatchedSize += sizeMatch;
+        _statsListener.refresh( _stats );
     }
 
     private Path mergeDataFromPeerAndReplica(LocatableFileInfo fileInfo,
@@ -2024,6 +2044,8 @@ public class Receiver implements RsyncTask, MessageHandler
                     buffer.rewind();
                     writer.release( buffer );
                     sizeMatch += sparselen;
+                    _stats._totalMatchedSize += sparselen;
+                    _statsListener.refresh( _stats );
                     continue;
                 }
                 // blockIndex >= 0 && blockIndex <= Integer.MAX_VALUE
@@ -2052,7 +2074,10 @@ public class Receiver implements RsyncTask, MessageHandler
                     continue;
                 }
 
-                sizeMatch += blockSize(blockIndex, checksumHeader);
+                int matchedBytes = blockSize(blockIndex, checksumHeader);
+                sizeMatch += matchedBytes;
+                _stats._totalMatchedSize += matchedBytes;
+                _statsListener.refresh( _stats );
 
                 if (isDeferrable) {
                     if (blockIndex == expectedIndex) {
@@ -2090,6 +2115,8 @@ public class Receiver implements RsyncTask, MessageHandler
                 int length = token;
                 sizeLiteral += length;
                 copyFromPeerAndUpdateDigest(writer, length, checksum);
+                _stats._totalLiteralSize += length;
+                _statsListener.refresh( _stats );
             }
         }
 
@@ -2128,8 +2155,6 @@ public class Receiver implements RsyncTask, MessageHandler
                                     100 * sizeMatch /
                                           (float) (sizeMatch + sizeLiteral)));
         }
-        _stats._totalLiteralSize += sizeLiteral;
-        _stats._totalMatchedSize += sizeMatch;
         return isDeferrable;
     }
     

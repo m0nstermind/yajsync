@@ -387,6 +387,7 @@ public final class RsyncClient
             Receiver receiver = Receiver.Builder.newListing(generator,
                                                             toReceiver.source()).
                     isExitEarlyIfEmptyList(true).
+                    statisticsListener( _statsListener ).
                     isDeferWrite(_isDeferWrite).build();
 
             return new FileListing(sender, generator, receiver);
@@ -443,6 +444,7 @@ public final class RsyncClient
                                                      toReceiver.source(),
                                                      dstPath).
                     isExitEarlyIfEmptyList(true).
+                    statisticsListener( _statsListener ).
                     isDeferWrite(_isDeferWrite).build();
             try {
                 boolean isOK = _rsyncTaskExecutor.exec(sender, generator,
@@ -715,6 +717,7 @@ public final class RsyncClient
                             isExitAfterEOF(true).
                             isExitEarlyIfEmptyList(true).
                             isReceiveStatistics(true).
+                            statisticsListener( _statsListener ).
                             isSafeFileList(cfg.isSafeFileList()).build();
                     boolean isOK = _rsyncTaskExecutor.exec(generator, receiver);
                     return new Result(isOK, receiver.statistics());
@@ -873,6 +876,7 @@ public final class RsyncClient
         private int _verbosity ;
         private int _blockSize = DEFAULT_BLOCK_SIZE;
         private PrintStream _stderr = System.err;
+        private Statistics.Listener _statsListener = stats -> {};
 
         public Local buildLocal()
         {
@@ -1020,6 +1024,12 @@ public final class RsyncClient
             _verbosity = verbosity;
             return this;
         }
+
+        public Builder statisticsListener(Statistics.Listener listener)
+        {
+            _statsListener = listener;
+            return this;
+        }
     }
 
     private static final Logger _log =
@@ -1048,6 +1058,7 @@ public final class RsyncClient
     private final PrintStream _stderr;
     private final RsyncTaskExecutor _rsyncTaskExecutor;
     private int _blockSize;
+    private Statistics.Listener _statsListener;
 
     private RsyncClient(Builder builder)
     {
@@ -1081,5 +1092,6 @@ public final class RsyncClient
         _fileSelectionOrNull = builder._fileSelection;
         _verbosity = builder._verbosity;
         _stderr = builder._stderr;
+        _statsListener = builder._statsListener;
     }
 }

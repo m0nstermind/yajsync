@@ -20,6 +20,10 @@ package com.github.perlundq.yajsync;
 
 public interface Statistics
 {
+    interface Listener {
+        void refresh( Statistics stats );
+    }
+    
     /**
      * @return total amount of files in all file list segments
      */
